@@ -18,19 +18,12 @@ namespace Circuit_Breaker
             this.StatedBreaker = circuitBreaker;
         }
 
-        public static CircuitBreakerContext Create()
-        {
-            CircuitBreakerContext instance = new CircuitBreakerContext();
-            ClosedCircuitBreaker circuitBreaker = new ClosedCircuitBreaker(instance);
-            instance.StatedBreaker = circuitBreaker;
-
-            return instance;
-        }
-
         public static CircuitBreakerContext Create(Action<CircuitBreakerThreshold> setter)
         {
-            CircuitBreakerContext instance = Create();
+            CircuitBreakerContext instance = new CircuitBreakerContext();
             instance.SetThreshold(setter);
+            ClosedCircuitBreaker circuitBreaker = new ClosedCircuitBreaker(instance);
+            instance.StatedBreaker = circuitBreaker;
 
             return instance;
         }
@@ -117,6 +110,8 @@ namespace Circuit_Breaker
         public int FailureThreshold { get; set; }
 
         public int ConsecutiveSuccessThreshold { get; set; }
+
+        public TimeSpan RetryTimeout { get; set; }
     }
 
     internal class CircuitBreakerMetrics
