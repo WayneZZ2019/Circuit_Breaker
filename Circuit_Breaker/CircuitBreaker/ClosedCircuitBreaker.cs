@@ -12,7 +12,7 @@ namespace Circuit_Breaker.CircuitBreaker
         public ClosedCircuitBreaker(CircuitBreakerContext context)
             : base(context)
         {
-            failedTimeCounter = new TimeCounter(FailedTimeout, () => context.ResetFailure());
+            failedTimeCounter = new TimeCounter(context.Threshold.FailureTimeout, () => context.ResetFailure());
         }
 
         internal override State State
@@ -51,9 +51,5 @@ namespace Circuit_Breaker.CircuitBreaker
         /// 失败次数计时器
         /// </summary>
         private TimeCounter failedTimeCounter;
-        /// <summary>
-        /// 失败计数超时间隔
-        /// </summary>
-        public TimeSpan FailedTimeout { get; set; }
     }
 }
