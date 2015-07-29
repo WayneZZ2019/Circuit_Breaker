@@ -51,6 +51,7 @@
     <Compile Include="CircuitBreaker\ClosedCircuitBreaker.cs" />
     <Compile Include="CircuitBreaker\OpenCircuitBreaker.cs" />
     <Compile Include="CircuitBreaker\HalfOpenCircuitBreaker.cs" />
+    <Compile Include="Util\TimeCounter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

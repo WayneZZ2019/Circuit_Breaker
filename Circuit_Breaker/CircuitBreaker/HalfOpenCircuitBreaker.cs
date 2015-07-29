@@ -21,7 +21,21 @@ namespace Circuit_Breaker.CircuitBreaker
 
         internal override void Handle(Action action)
         {
-            //throw new BrokenException();
+            try
+            {
+                action();
+            }
+            catch (System.Exception ex)
+            {
+                context.TransferOpenState();
+                throw new BrokenException("Retry failed!", ex);
+            }
+            context.IncrementConsecutiveSucessCount();
+
+            if (context.Metrics.ConsecutiveSucessCount >= context.Threshold.ConsecutiveSuccessThreshold)
+            {
+                context.TransferCloseState();
+            }
         }
     }
 }

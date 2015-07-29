@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Circuit_Breaker.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ namespace Circuit_Breaker.CircuitBreaker
         public ClosedCircuitBreaker(CircuitBreakerContext context)
             : base(context)
         {
+            failedTimeCounter = new TimeCounter(FailedTimeout, () => context.ResetFailure());
         }
 
         internal override State State
@@ -26,10 +28,32 @@ namespace Circuit_Breaker.CircuitBreaker
             }
             catch (System.Exception ex)
             {
-                context.Metrics.LastException = ex;
-                context.Metrics.FailureCount++;
+                context.IncrementFailure(ex);
                 throw;
             }
+            finally
+            {
+                failedTimeCounter.Restart();
+            }
+
+            if (context.Metrics.FailureCount >= context.Threshold.FailureThreshold)
+            {
+                context.TransferOpenState();
+            }
         }
+
+        public override void Close()
+        {
+            failedTimeCounter.Close();
+        }
+
+        /// <summary>
+        /// 失败次数计时器
+        /// </summary>
+        private TimeCounter failedTimeCounter;
+        /// <summary>
+        /// 失败计数超时间隔
+        /// </summary>
+        public TimeSpan FailedTimeout { get; set; }
     }
 }

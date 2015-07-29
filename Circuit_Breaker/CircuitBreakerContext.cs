@@ -1,4 +1,5 @@
 ﻿using Circuit_Breaker.CircuitBreaker;
+using Circuit_Breaker.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,83 +27,105 @@ namespace Circuit_Breaker
             return instance;
         }
 
+        public static CircuitBreakerContext Create(Action<CircuitBreakerThreshold> setter)
+        {
+            CircuitBreakerContext instance = Create();
+            instance.SetThreshold(setter);
+
+            return instance;
+        }
+
         internal StatedCircuitBreaker StatedBreaker { get; set; }
 
         public State State { get; internal set; }
 
         internal void TransferOpenState()
         {
+            if (StatedBreaker != null)
+                StatedBreaker.Dispose();
             StatedBreaker = new OpenCircuitBreaker(this);
         }
 
         internal void TransferCloseState()
         {
+            if (StatedBreaker != null)
+                StatedBreaker.Dispose();
             StatedBreaker = new ClosedCircuitBreaker(this);
         }
 
         internal void TransferHalfOpenState()
         {
+            if (StatedBreaker != null)
+                StatedBreaker.Dispose();
             StatedBreaker = new HalfOpenCircuitBreaker(this);
+        }
+
+        internal void IncrementConsecutiveSucessCount()
+        {
+            Interlocked.Increment(ref this.Metrics.ConsecutiveSucessCount);
+        }
+
+        internal void IncrementFailure(System.Exception ex)
+        {
+            this.Metrics.LastException = ex;
+            Interlocked.Increment(ref this.Metrics.FailureCount);
+        }
+
+        internal void ResetFailure()
+        {
+            Interlocked.Exchange(ref this.Metrics.FailureCount, 0);
+        }
+
+        internal void ResetMetrics()
+        {
+            Interlocked.Exchange(ref this.Metrics.FailureCount, 0);
+            Interlocked.Exchange(ref this.Metrics.ConsecutiveSucessCount, 0);
+        }
+
+        internal void SetThreshold(Action<CircuitBreakerThreshold> setter)
+        {
+            Threshold = new CircuitBreakerThreshold();
+            setter(Threshold);
+        }
+
+        private void EnsureThresholdInit()
+        {
+            if (Threshold == null)
+            {
+                throw new ArgumentNullException("Threshold");
+            }
         }
 
         public void Execute(Action action)
         {
+            EnsureThresholdInit();
             StatedBreaker.Handle(action);
-            CheckCircuitBreakerState();
         }
 
-        internal void CheckCircuitBreakerState()
-        {
-
-        }
-
-        private CircuitBreakerThreshold threshold = new CircuitBreakerThreshold();
-        /// <summary>
-        /// 熔断器阀值配置
-        /// </summary>
-        internal CircuitBreakerThreshold Threshold { get { return threshold; } }
+        internal CircuitBreakerThreshold Threshold { get; private set; }
 
         private CircuitBreakerMetrics metrics = new CircuitBreakerMetrics();
-        /// <summary>
-        /// 熔断器运行参数
-        /// </summary>
+ 
         internal CircuitBreakerMetrics Metrics { get { return metrics; } }
 
     }
 
-    /// <summary>
-    /// 熔断器阀值配置
-    /// </summary>
-    internal class CircuitBreakerThreshold
+    public class CircuitBreakerThreshold
     {
-        /// <summary>
-        /// 失败次数（断开阀值），从正常（Closed）切换到断开（Open）
-        /// </summary>
+        public TimeSpan FailureTimeout { get; set; }
+
         public int FailureThreshold { get; set; }
-        /// <summary>
-        /// 连续成功次数，从半断开（HalfOpen）切换到正常（Closed）
-        /// </summary>
+
         public int ConsecutiveSuccessThreshold { get; set; }
     }
 
-    /// <summary>
-    /// 熔断器运行参数
-    /// </summary>
     internal class CircuitBreakerMetrics
     {
-        /// <summary>
-        /// 失败次数
-        /// </summary>
-        public int FailureCount { get; set; }
-        /// <summary>
-        /// 成功次数
-        /// </summary>
-        public int ConsecutiveSucessCount { get; set; }
+        public int FailureCount = 0;
 
-        /// <summary>
-        /// 最后一次运行异常信息
-        /// </summary>
-        public System.Exception LastException { get; set; }
+        public int ConsecutiveSucessCount = 0;
+
+        public System.Exception LastException = null;
     }
 
     

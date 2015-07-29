@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Circuit_Breaker.CircuitBreaker
 {
-    public abstract class StatedCircuitBreaker
+    public abstract class StatedCircuitBreaker : IDisposable
     {
         protected readonly CircuitBreakerContext context;
 
@@ -14,8 +14,17 @@ namespace Circuit_Breaker.CircuitBreaker
         {
             this.context = context;
             this.context.State = State;
+
+            this.context.ResetMetrics();
         }
         abstract internal State State { get; }
         abstract internal void Handle(Action action);
+
+        public virtual void Close() { }
+
+        public void Dispose()
+        {
+            Close();
+        }
     }
 }
