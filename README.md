@@ -1,2 +1,2 @@
-# Design_Pattern_Practice
-Principle &amp; Pattern &amp; Practice
+# Circuit Breaker Pattern
+Circuit Breaker Pattern writen by C#, experimental code
