@@ -13,6 +13,7 @@ namespace Circuit_Breaker.CircuitBreaker
             : base(context)
         {
             failedTimeCounter = new TimeCounter(context.Threshold.FailureTimeout, () => context.ResetFailure());
+            failedTimeCounter.Start();
         }
 
         internal override State State
@@ -34,11 +35,10 @@ namespace Circuit_Breaker.CircuitBreaker
             finally
             {
                 failedTimeCounter.Restart();
-            }
-
-            if (context.Metrics.FailureCount >= context.Threshold.FailureThreshold)
-            {
-                context.TransferOpenState();
+                if (context.Metrics.FailureCount >= context.Threshold.FailureThreshold)
+                {
+                    context.TransferOpenState();
+                }
             }
         }
 

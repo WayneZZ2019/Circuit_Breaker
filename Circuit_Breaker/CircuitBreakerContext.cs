@@ -92,7 +92,30 @@ namespace Circuit_Breaker
         public void Execute(Action action)
         {
             EnsureThresholdInit();
-            StatedBreaker.Handle(action);
+            Execute(action, this.Threshold.ExceptionHandler);
+        }
+
+        public void Execute(Action action, Func<System.Exception, bool> exceptionHdl)
+        {
+            try
+            {
+                StatedBreaker.Handle(action);
+            }
+            catch (System.Exception ex)
+            {
+                if (exceptionHdl != null)
+                {
+                    if (!exceptionHdl(ex))
+                    {
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public System.Exception LastException
+        {
+            get { return this.Metrics.LastException; }
         }
 
         internal CircuitBreakerThreshold Threshold { get; private set; }
@@ -112,6 +135,8 @@ namespace Circuit_Breaker
         public int ConsecutiveSuccessThreshold { get; set; }
 
         public TimeSpan RetryTimeout { get; set; }
+
+        public Func<System.Exception, bool> ExceptionHandler { get; set; }
     }
 
     internal class CircuitBreakerMetrics

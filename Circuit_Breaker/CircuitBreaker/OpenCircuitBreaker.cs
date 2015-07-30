@@ -14,6 +14,7 @@ namespace Circuit_Breaker.CircuitBreaker
             : base(context)
         {
             retryTimeCounter = new TimeCounter(context.Threshold.RetryTimeout, () => context.TransferHalfOpenState());
+            retryTimeCounter.Start();
         }
 
         internal override State State
